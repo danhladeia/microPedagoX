@@ -901,20 +901,15 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 <div id="toast"></div>
 
 <script>
-// ── CONFIG APIs (Pollinations AI) ──
-const POLLINATIONS_KEY = 'sk_uZ1Axr3aGMjWdd0uH76ZDZafDcGMDPb2';
-const POLLINATIONS_TEXT_URL = 'https://text.pollinations.ai/openai';
-const POLLINATIONS_IMAGE_URL = 'https://gen.pollinations.ai/image';
-function pollinationsHeaders() {
-  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + POLLINATIONS_KEY };
-}
-
 // ── STATE ──
 let currentTool = 'plano';
 let currentDoc = null;
 let imggenSize = 'small';
 let imggenTarget = null;
 let headerConfigOpen = false;
+
+// Pollinations API Key
+const POLLINATIONS_API_KEY = 'sk_uZ1Axr3aGMjWdd0uH76ZDZafDcGMDPb2';
 
 // ── NAV ──
 function goHome() {
@@ -1108,44 +1103,26 @@ Retorne um JSON com esta estrutura exata (sem markdown, só JSON puro):
   }
 
   try {
-    // Pollinations Text API — endpoint GET (sem CORS, funciona em arquivo local)
-    const systemPrompt = 'Você é um especialista em educação brasileira. Responda APENAS com JSON válido, sem markdown, sem texto antes ou depois. Não inclua nenhum texto fora do JSON.';
-    const seed = Math.floor(Math.random() * 9999);
-    const url = 'https://text.pollinations.ai/' + encodeURIComponent(prompt)
-      + '?model=openai-large'
-      + '&seed=' + seed
-      + '&json=true'
-      + '&private=true'
-      + '&system=' + encodeURIComponent(systemPrompt)
-      + '&token=' + POLLINATIONS_KEY;
-
-    const resp = await fetch(url);
-
-    if (!resp.ok) {
-      const errText = await resp.text();
-      throw new Error('HTTP ' + resp.status + ': ' + errText.slice(0,120));
-    }
-
-    const raw = await resp.text();
-    if (!raw || raw.trim() === '') throw new Error('Resposta vazia da API');
-
-    // Limpa markdown se vier com backticks
-    const clean = raw.replace(/^```jsons*/,'').replace(/```s*$/,'').trim();
-
-    // Extrai JSON mesmo se vier com texto em volta
-    const jsonMatch = clean.match(/{[sS]*}/);
-    if (!jsonMatch) throw new Error('JSON não encontrado na resposta');
-
-    const doc = JSON.parse(jsonMatch[0]);
-    if (!doc.titulo || !doc.secoes) throw new Error('Estrutura inválida: ' + clean.slice(0,80));
-
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: 'Você é um especialista em educação brasileira. Responda APENAS com JSON válido, sem markdown, sem texto antes ou depois.',
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await resp.json();
+    const raw = data.content?.[0]?.text || '{}';
+    const clean = raw.replace(/```json|```/g,'').trim();
+    const doc = JSON.parse(clean);
     renderDoc(doc, meta, tipo);
     currentDoc = { doc, meta, tipo };
     showToast('Documento gerado com sucesso! ✨');
   } catch(e) {
-    console.error('Erro Pollinations:', e.message);
-    showToast('Erro ao gerar: ' + e.message.slice(0,80));
     renderDocDemo(tipo, meta);
+    showToast('Prévia carregada — configure a chave API para gerar com IA');
   }
 
   clearInterval(lt);
@@ -1228,7 +1205,7 @@ function addAnswerBox() {
   } else showToast('Clique no documento para posicionar a caixa');
 }
 
-// ── IMAGE GEN ──
+// ── IMAGE GEN (CORRECTED POLLINATIONS INTEGRATION) ──
 function openImgGen() {
   imggenTarget = window.getSelection().getRangeAt ? window.getSelection().getRangeAt(0).cloneRange() : null;
   document.getElementById('imggen-modal').classList.add('open');
@@ -1245,31 +1222,31 @@ async function generateImage() {
   const btn = document.getElementById('btn-gen-image');
   btn.classList.add('loading'); btn.disabled = true;
 
-  // Tamanho em pixels para Pollinations (quadrado)
+  // Size mapping in pixels
   const sizeMap = { small: 512, medium: 768, large: 1024 };
   const px = sizeMap[imggenSize];
 
-  // Estilo selecionado
+  // Get selected style
   const estiloEl = document.querySelector('#img-style-chips .chip.active');
   const estilo = estiloEl ? estiloEl.textContent.trim() : 'Ilustração';
   const estiloMap = {
-    'Ilustração':    'flat illustration, educational, clean, colorful, vector style',
-    'Diagrama':      'educational diagram, labeled, clean lines, white background, technical',
-    'Foto realista': 'photorealistic, high quality, educational photo',
-    'Linha simples': 'simple line drawing, black and white, educational sketch, minimal',
-    'Cartoon':       'cartoon style, friendly, colorful, educational, for children'
+    'Ilustração': 'illustration, educational, flat design, vector style, clean background',
+    'Diagrama': 'educational diagram, labeled, clean lines, white background, technical drawing',
+    'Foto realista': 'photorealistic, high quality, educational photo, professional',
+    'Linha simples': 'simple line drawing, black and white, educational sketch, minimal style',
+    'Cartoon': 'cartoon style, friendly, colorful, educational for children, cute'
   };
   const estiloEn = estiloMap[estilo] || 'educational illustration';
-
-  // Traduz prompt + adiciona contexto educacional (Pollinations é melhor em inglês)
-  const promptEn = `Educational material illustration: ${promptRaw}. Style: ${estiloEn}. Square format, no text overlays, clean background, suitable for school documents, high quality.`;
-
-  // Monta URL autenticada da Pollinations.AI
-  const seed = Math.floor(Math.random() * 99999);
+  
+  // Build optimized prompt for Pollinations
+  const promptEn = `Educational material: ${promptRaw}. Style: ${estiloEn}. Square format, no text overlays, clean background, suitable for school documents, high quality, 4k, detailed`;
   const encodedPrompt = encodeURIComponent(promptEn);
-  const url = `${POLLINATIONS_IMAGE_URL}/${encodedPrompt}?model=flux&width=${px}&height=${px}&seed=${seed}&enhance=false&nologo=true&key=${POLLINATIONS_KEY}`;
-
-  // Mostra skeleton enquanto carrega
+  
+  // Correct Pollinations API format with API key and parameters
+  const seed = Math.floor(Math.random() * 99999);
+  const url = `https://gen.pollinations.ai/image/${encodedPrompt}?model=flux&width=${px}&height=${px}&seed=${seed}&enhance=true&key=${POLLINATIONS_API_KEY}`;
+  
+  // Show loading skeleton
   const result = document.getElementById('imggen-result');
   const preview = document.getElementById('imggen-preview');
   const skeleton = document.getElementById('imggen-loading-skeleton');
@@ -1278,42 +1255,62 @@ async function generateImage() {
   result.classList.add('visible');
   skeleton.style.display = 'block';
   preview.style.display = 'none';
-  actions.style.display = 'none';
-  credit.style.display = 'none';
+  if(actions) actions.style.display = 'none';
+  if(credit) credit.style.display = 'none';
 
-  // Cria nova imagem para detectar load/error sem piscar o preview
-  const img = new Image();
-  img.onload = () => {
+  try {
+    // Fetch the image
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const blob = await response.blob();
+    const imageUrl = URL.createObjectURL(blob);
+    
     skeleton.style.display = 'none';
-    preview.src = url;
+    preview.src = imageUrl;
     preview.style.display = 'block';
-    actions.style.display = 'flex';
-    credit.style.display = 'block';
+    if(actions) actions.style.display = 'flex';
+    if(credit) credit.style.display = 'block';
     btn.classList.remove('loading'); btn.disabled = false;
     showToast('Imagem gerada com Pollinations AI! ✨');
-  };
-  img.onerror = () => {
+    
+    // Store for insertion
+    window._lastImgBlob = blob;
+    window._lastImgUrl = imageUrl;
+  } catch (error) {
+    console.error('Pollinations API error:', error);
     skeleton.style.display = 'none';
     result.classList.remove('visible');
     btn.classList.remove('loading'); btn.disabled = false;
-    showToast('Erro ao gerar imagem. Tente novamente.');
-  };
-  img.src = url;
-
-  // Salva URL para inserção no documento
-  window._lastImgUrl = url;
+    showToast('Erro ao gerar imagem. Verifique sua chave API e tente novamente.');
+  }
 }
 
 function regenImage() { generateImage(); }
 
 function insertImageToDoc() {
-  const src = window._lastImgUrl || document.getElementById('imggen-preview').src;
-  if (!src) { showToast('Gere uma imagem primeiro'); return; }
+  const blob = window._lastImgBlob;
+  if (!blob) { 
+    const previewSrc = document.getElementById('imggen-preview').src;
+    if (!previewSrc || previewSrc === '') { showToast('Gere uma imagem primeiro'); return; }
+    // Use existing preview if available
+    const sizeMap = { small: '180px', medium: '280px', large: '400px' };
+    const sz = sizeMap[imggenSize];
+    const caption = document.getElementById('imggen-prompt').value.trim().slice(0,60);
+    const imgHtml = `<div style="display:inline-block;margin:16px auto;text-align:center;"><img src="${previewSrc}" style="width:${sz};height:${sz};object-fit:cover;border-radius:8px;border:1px solid #E2DDD5;display:block;" crossorigin="anonymous"><div style="font-size:11px;color:#9A958F;margin-top:5px;font-style:italic;">Figura: ${caption}</div></div><br>`;
+    const sections = document.querySelectorAll('.doc-content');
+    if (sections.length > 0) {
+      sections[sections.length-1].innerHTML += imgHtml;
+    }
+    closeImgGen();
+    showToast('Imagem inserida no documento! 🖼');
+    return;
+  }
+  
   const sizeMap = { small: '180px', medium: '280px', large: '400px' };
   const sz = sizeMap[imggenSize];
   const caption = document.getElementById('imggen-prompt').value.trim().slice(0,60);
-  const imgHtml = `<div style="display:inline-block;margin:16px auto;text-align:center;"><img src="${src}" style="width:${sz};height:${sz};object-fit:cover;border-radius:8px;border:1px solid #E2DDD5;display:block;" crossorigin="anonymous"><div style="font-size:11px;color:#9A958F;margin-top:5px;font-style:italic;">Figura: ${caption}</div></div><br>`;
-  // Insere no último bloco editável do documento
+  const imageUrl = URL.createObjectURL(blob);
+  const imgHtml = `<div style="display:inline-block;margin:16px auto;text-align:center;"><img src="${imageUrl}" style="width:${sz};height:${sz};object-fit:cover;border-radius:8px;border:1px solid #E2DDD5;display:block;" crossorigin="anonymous"><div style="font-size:11px;color:#9A958F;margin-top:5px;font-style:italic;">Figura: ${caption}</div></div><br>`;
   const sections = document.querySelectorAll('.doc-content');
   if (sections.length > 0) {
     sections[sections.length-1].innerHTML += imgHtml;
@@ -1336,8 +1333,8 @@ function exportWord() {
   const municipio = document.getElementById('hf-municipio').value || '';
   const sections = [...document.querySelectorAll('.doc-section')].map(s => {
     const t = s.querySelector('.doc-section-title')?.textContent || '';
-    const c = s.querySelector('.doc-content')?.innerText || '';
-    return `<h2>${t}</h2><p>${c.replace(/\n/g,'</p><p>')}</p>`;
+    const c = s.querySelector('.doc-content')?.innerHTML || s.querySelector('.doc-content')?.innerText || '';
+    return `<h2>${t}</h2><div>${c}</div>`;
   }).join('');
 
   const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
