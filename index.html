@@ -904,7 +904,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 // ── CONFIG APIs (Pollinations AI) ──
 const POLLINATIONS_KEY = 'sk_uZ1Axr3aGMjWdd0uH76ZDZafDcGMDPb2';
 const POLLINATIONS_TEXT_URL = 'https://text.pollinations.ai/openai';
-const POLLINATIONS_IMAGE_URL = 'https://image.pollinations.ai/prompt';
+const POLLINATIONS_IMAGE_URL = 'https://gen.pollinations.ai/image';
 function pollinationsHeaders() {
   return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + POLLINATIONS_KEY };
 }
@@ -1108,29 +1108,48 @@ Retorne um JSON com esta estrutura exata (sem markdown, só JSON puro):
   }
 
   try {
-    const resp = await fetch(POLLINATIONS_TEXT_URL + '/chat/completions', {
-      method: 'POST',
-      headers: pollinationsHeaders(),
-      body: JSON.stringify({
-        model: 'openai',
-        messages: [
-          { role: 'system', content: 'Você é um especialista em educação brasileira. Responda APENAS com JSON válido, sem markdown, sem texto antes ou depois.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7,
-        seed: Math.floor(Math.random()*9999)
-      })
+    // Pollinations AI — API compatível com OpenAI
+    const reqBody = JSON.stringify({
+      model: 'openai-large',
+      messages: [
+        { role: 'system', content: 'Você é um especialista em educação brasileira. Responda APENAS com JSON válido, sem markdown, sem texto antes ou depois. Não inclua nenhum texto fora do JSON.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.7,
+      private: true
     });
+
+    const resp = await fetch('https://text.pollinations.ai/openai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + POLLINATIONS_KEY
+      },
+      body: reqBody
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      throw new Error('HTTP ' + resp.status + ': ' + errText);
+    }
+
     const data = await resp.json();
-    const raw = data.choices?.[0]?.message?.content || '{}';
-    const clean = raw.replace(/```json|```/g,'').trim();
+    const raw = data.choices?.[0]?.message?.content || '';
+    if (!raw) throw new Error('Resposta vazia da API');
+
+    // Limpa markdown se vier com backticks
+    const clean = raw.replace(/^```json\s*/,'').replace(/```\s*$/,'').trim();
     const doc = JSON.parse(clean);
+
+    if (!doc.titulo || !doc.secoes) throw new Error('JSON inválido: ' + clean.slice(0,100));
+
     renderDoc(doc, meta, tipo);
     currentDoc = { doc, meta, tipo };
     showToast('Documento gerado com sucesso! ✨');
   } catch(e) {
+    console.error('Erro Pollinations Text:', e.message);
+    showToast('Erro: ' + e.message.slice(0,80));
     renderDocDemo(tipo, meta);
-    showToast('Prévia carregada — configure a chave API para gerar com IA');
   }
 
   clearInterval(lt);
@@ -1252,7 +1271,7 @@ async function generateImage() {
   // Monta URL autenticada da Pollinations.AI
   const seed = Math.floor(Math.random() * 99999);
   const encodedPrompt = encodeURIComponent(promptEn);
-  const url = `${POLLINATIONS_IMAGE_URL}/${encodedPrompt}?width=${px}&height=${px}&seed=${seed}&nologo=true&enhance=true&token=${POLLINATIONS_KEY}`;
+  const url = `${POLLINATIONS_IMAGE_URL}/${encodedPrompt}?model=flux&width=${px}&height=${px}&seed=${seed}&enhance=false&nologo=true&key=${POLLINATIONS_KEY}`;
 
   // Mostra skeleton enquanto carrega
   const result = document.getElementById('imggen-result');
