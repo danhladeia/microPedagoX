@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pedagox — Ferramentas Pedagógicas com IA</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F7F5F0;
+  --surface: #FFFFFF;
+  --surface2: #F0EDE6;
+  --border: #E2DDD5;
+  --border2: #C8C2B8;
+  --text: #1A1714;
+  --text2: #5A5650;
+  --text3: #9A958F;
+  --accent: #2563EB;
+  --accent-bg: #EFF4FF;
+  --accent2: #059669;
+  --accent2-bg: #ECFDF5;
+  --warn: #D97706;
+  --warn-bg: #FFFBEB;
+  --red: #DC2626;
+  --red-bg: #FEF2F2;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 12px rgba(0,0,0,.05);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,.1), 0 12px 40px rgba(0,0,0,.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+.serif { font-family: 'DM Serif Display', serif; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ── TOPBAR ── */
+#topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(247,245,240,.95); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px; height: 58px;
+}
+.logo-wrap { display: flex; align-items: baseline; gap: 6px; cursor: pointer; }
+.logo-text { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--text); }
+.logo-tag { font-size: 11px; color: var(--text3); font-weight: 500; letter-spacing: .05em; }
+.nav-tabs { display: flex; gap: 2px; }
+.nav-tab {
+  padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 500;
+  cursor: pointer; color: var(--text2); border: none; background: none; transition: all .15s;
+}
+.nav-tab:hover { background: var(--surface2); color: var(--text); }
+.nav-tab.active { background: var(--text); color: var(--bg); }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.btn-login { padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border2); background: var(--surface); color: var(--text); transition: all .15s; }
+.btn-login:hover { border-color: var(--text); }
+.btn-signup { padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: var(--text); color: var(--bg); transition: opacity .15s; }
+.btn-signup:hover { opacity: .85; }
+
+/* ── MAIN LAYOUT ── */
+#app { display: flex; height: calc(100vh - 58px); overflow: hidden; }
+
+/* ── SIDEBAR ── */
+#sidebar {
+  width: 300px; min-width: 300px; border-right: 1px solid var(--border);
+  background: var(--surface); overflow-y: auto; display: flex; flex-direction: column;
+  transition: width .2s;
+}
+.sidebar-section { padding: 20px; border-bottom: 1px solid var(--border); }
+.sidebar-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text3); margin-bottom: 12px; }
+
+/* ── FORM ELEMENTS ── */
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 5px; }
+.field select, .field input, .field textarea {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+  border-radius: var(--radius); font-size: 13px; font-family: 'DM Sans', sans-serif;
+  background: var(--bg); color: var(--text); outline: none; transition: border-color .15s;
+  appearance: none;
+}
+.field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%239A958F' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+.field select:focus, .field input:focus, .field textarea:focus { border-color: var(--accent); }
+.field textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ── CHIPS ── */
+.chips-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  border: 1px solid var(--border); background: var(--bg); color: var(--text2);
+  cursor: pointer; transition: all .12s; user-select: none;
+}
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.chip.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+.chip.green.active { background: var(--accent2-bg); border-color: var(--accent2); color: var(--accent2); }
+
+/* ── GENERATE BUTTON ── */
+.btn-generate {
+  width: 100%; padding: 12px; border-radius: var(--radius); border: none;
+  background: var(--text); color: var(--bg); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all .15s; display: flex; align-items: center;
+  justify-content: center; gap: 8px;
+}
+.btn-generate:hover { opacity: .88; transform: translateY(-1px); }
+.btn-generate:active { transform: translateY(0); }
+.btn-generate:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.btn-generate .spinner {
+  width: 16px; height: 16px; border: 2px solid rgba(247,245,240,.3);
+  border-top-color: var(--bg); border-radius: 50%; display: none;
+  animation: spin .7s linear infinite;
+}
+.btn-generate.loading .spinner { display: block; }
+.btn-generate.loading .btn-label { display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ── CONTENT AREA ── */
+#content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+
+/* ── WELCOME ── */
+#welcome {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 40px; text-align: center;
+}
+.welcome-icon { font-size: 48px; margin-bottom: 20px; }
+.welcome-title { font-family: 'DM Serif Display', serif; font-size: 32px; color: var(--text); margin-bottom: 10px; }
+.welcome-sub { font-size: 15px; color: var(--text2); max-width: 420px; line-height: 1.6; }
+.welcome-features { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 32px; max-width: 500px; width: 100%; }
+.feature-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 18px; text-align: left; cursor: pointer; transition: all .15s;
+}
+.feature-card:hover { border-color: var(--border2); box-shadow: var(--shadow); transform: translateY(-2px); }
+.feature-icon { font-size: 24px; margin-bottom: 10px; }
+.feature-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.feature-desc { font-size: 12px; color: var(--text3); line-height: 1.5; }
+
+/* ── TOOLBAR ── */
+#toolbar {
+  display: none; align-items: center; gap: 6px; padding: 10px 20px;
+  border-bottom: 1px solid var(--border); background: var(--surface);
+  flex-wrap: wrap;
+}
+#toolbar.visible { display: flex; }
+.tool-group { display: flex; gap: 2px; }
+.tool-sep { width: 1px; background: var(--border); margin: 0 4px; align-self: stretch; }
+.tb-btn {
+  padding: 6px 10px; border-radius: 7px; border: none; background: none;
+  font-size: 13px; color: var(--text2); cursor: pointer; transition: all .12s;
+  font-family: 'DM Sans', sans-serif; font-weight: 500;
+}
+.tb-btn:hover { background: var(--surface2); color: var(--text); }
+.tb-btn.active { background: var(--text); color: var(--bg); }
+.tb-btn.icon { padding: 6px 8px; }
+.export-group { margin-left: auto; display: flex; gap: 6px; }
+.btn-export {
+  padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  cursor: pointer; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text2); transition: all .12s; display: flex; align-items: center; gap: 5px;
+}
+.btn-export:hover { border-color: var(--border2); color: var(--text); background: var(--surface2); }
+.btn-export.blue { border-color: #93C5FD; background: var(--accent-bg); color: var(--accent); }
+.btn-export.blue:hover { background: #DBEAFE; }
+.btn-export.green { border-color: #6EE7B7; background: var(--accent2-bg); color: var(--accent2); }
+.btn-export.green:hover { background: #D1FAE5; }
+
+/* ── EDITOR ── */
+#editor-wrap { flex: 1; overflow-y: auto; padding: 24px; display: none; }
+#editor-wrap.visible { display: block; }
+#doc-page {
+  background: white; max-width: 760px; margin: 0 auto;
+  box-shadow: var(--shadow-lg); border-radius: 4px;
+  min-height: 1040px;
+}
+
+/* ── HEADER ZONE ── */
+#doc-header {
+  border-bottom: 2px solid var(--border);
+  padding: 24px 40px 20px;
+  position: relative;
+}
+#header-placeholder {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 20px; cursor: pointer;
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  transition: all .15s; color: var(--text3);
+}
+#header-placeholder:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+#header-placeholder span { font-size: 13px; font-weight: 500; }
+#header-custom { display: none; }
+#header-custom.visible { display: block; }
+#header-fields { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; align-items: start; }
+.hf-school { grid-column: 1/-1; }
+.hf-input {
+  border: none; border-bottom: 1px dashed var(--border); padding: 4px 0; width: 100%;
+  font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--text2);
+  background: none; outline: none; text-align: center;
+}
+.hf-input.large { font-size: 16px; font-weight: 600; color: var(--text); }
+.hf-input:focus { border-bottom-color: var(--accent); }
+.header-logo-wrap { display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+#school-logo {
+  max-height: 70px; max-width: 180px; object-fit: contain;
+  border-radius: 6px; display: none;
+}
+.logo-upload-btn {
+  padding: 6px 14px; border: 1px dashed var(--border); border-radius: 8px;
+  font-size: 12px; color: var(--text3); cursor: pointer; transition: all .15s;
+  background: none;
+}
+.logo-upload-btn:hover { border-color: var(--accent); color: var(--accent); }
+#logo-file { display: none; }
+
+/* ── DOC BODY ── */
+#doc-body { padding: 28px 40px 40px; }
+#doc-title-input {
+  width: 100%; border: none; font-family: 'DM Serif Display', serif;
+  font-size: 26px; color: var(--text); outline: none; margin-bottom: 6px;
+  background: none;
+}
+#doc-subtitle { font-size: 13px; color: var(--text3); margin-bottom: 24px; display: flex; gap: 16px; flex-wrap: wrap; }
+#doc-subtitle span { display: flex; align-items: center; gap: 4px; }
+
+/* ── CONTENT BLOCKS ── */
+.doc-section { margin-bottom: 24px; }
+.doc-section-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--accent); margin-bottom: 10px; padding-bottom: 6px;
+  border-bottom: 1px solid #DBEAFE;
+}
+.doc-content {
+  font-size: 14px; line-height: 1.75; color: var(--text);
+  outline: none; min-height: 40px;
+}
+.doc-content:focus { background: #FAFAF8; border-radius: 4px; padding: 4px 6px; margin: -4px -6px; }
+
+/* ── ACTIVITY BLOCKS ── */
+.activity-block {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  margin-bottom: 16px; overflow: hidden;
+}
+.activity-block-header {
+  background: var(--surface2); padding: 10px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.activity-block-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.activity-block-body { padding: 14px; }
+
+/* ── IMAGE BLOCK ── */
+.img-block {
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  padding: 16px; margin: 12px 0; text-align: center;
+  cursor: pointer; transition: all .15s;
+}
+.img-block:hover { border-color: var(--accent); background: var(--accent-bg); }
+.img-block.has-image { border-style: solid; border-color: var(--border); padding: 0; }
+.img-block img { width: 100%; border-radius: 6px; display: block; }
+.img-block-placeholder { color: var(--text3); font-size: 13px; }
+.img-block-placeholder strong { color: var(--accent); cursor: pointer; }
+.img-gen-badge {
+  display: inline-flex; align-items: center; gap: 4px; margin-top: 6px;
+  background: var(--accent-bg); border: 1px solid #BFDBFE; border-radius: 20px;
+  padding: 3px 10px; font-size: 11px; color: var(--accent); font-weight: 500;
+}
+
+/* ── ANSWER LINES ── */
+.answer-lines { margin-top: 8px; }
+.answer-line { border-bottom: 1px solid var(--border); height: 28px; margin-bottom: 4px; }
+
+/* ── ANSWER BOXES ── */
+.answer-boxes { display: grid; margin-top: 8px; gap: 8px; }
+.answer-boxes.cols-2 { grid-template-columns: 1fr 1fr; }
+.answer-boxes.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.answer-box {
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px;
+  min-height: 60px; display: flex; align-items: center; font-size: 13px; color: var(--text3);
+}
+.answer-box.square { aspect-ratio: 1; align-items: flex-start; }
+
+/* ── LOADING OVERLAY ── */
+#loading-overlay {
+  display: none; position: absolute; inset: 0;
+  background: rgba(247,245,240,.85); backdrop-filter: blur(4px);
+  z-index: 200; align-items: center; justify-content: center;
+  flex-direction: column; gap: 16px; border-radius: 4px;
+}
+#loading-overlay.visible { display: flex; }
+.loading-dots { display: flex; gap: 6px; }
+.loading-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+  animation: bounce .8s ease-in-out infinite;
+}
+.loading-dot:nth-child(2) { animation-delay: .15s; }
+.loading-dot:nth-child(3) { animation-delay: .3s; }
+@keyframes bounce { 0%,80%,100%{transform:scale(.6);opacity:.4} 40%{transform:scale(1);opacity:1} }
+.loading-text { font-size: 14px; color: var(--text2); font-weight: 500; }
+
+/* ── MODAL ── */
+.modal-bg {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.4); z-index: 500;
+  align-items: center; justify-content: center;
+}
+.modal-bg.open { display: flex; }
+.modal {
+  background: var(--surface); border-radius: var(--radius-lg);
+  width: 460px; max-width: 95vw; box-shadow: var(--shadow-lg);
+  padding: 28px;
+}
+.modal h2 { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 8px; }
+.modal p { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; cursor: pointer; font-size: 18px; color: var(--text3); }
+
+/* ── IMAGE GEN MODAL ── */
+#imggen-modal .modal { width: 500px; }
+.imggen-prompt { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none; background: var(--bg); color: var(--text); resize: vertical; min-height: 80px; }
+.imggen-prompt:focus { border-color: var(--accent); }
+.imggen-sizes { display: flex; gap: 8px; margin: 12px 0; }
+.size-btn { padding: 6px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; color: var(--text2); background: none; transition: all .12s; }
+.size-btn:hover { border-color: var(--border2); }
+.size-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+.imggen-result { margin-top: 16px; border-radius: var(--radius); overflow: hidden; display: none; }
+.imggen-result.visible { display: block; }
+.imggen-result img { width: 100%; display: block; border-radius: var(--radius); }
+
+/* ── LOGIN MODAL ── */
+#login-modal .modal-inner {
+  background: var(--surface); border-radius: var(--radius-lg);
+  width: 380px; max-width: 95vw; box-shadow: var(--shadow-lg); padding: 32px;
+}
+.login-logo { font-family: 'DM Serif Display', serif; font-size: 26px; text-align: center; margin-bottom: 6px; }
+.login-sub { text-align: center; font-size: 13px; color: var(--text3); margin-bottom: 24px; }
+.login-tabs { display: flex; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 20px; overflow: hidden; }
+.login-tab { flex: 1; padding: 9px; text-align: center; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text2); border: none; background: none; transition: all .12s; }
+.login-tab.active { background: var(--text); color: var(--bg); }
+.login-field { margin-bottom: 14px; }
+.login-field label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 5px; }
+.login-field input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none; background: var(--bg); color: var(--text); transition: border-color .15s; }
+.login-field input:focus { border-color: var(--accent); }
+.btn-login-submit { width: 100%; padding: 11px; border-radius: var(--radius); border: none; background: var(--text); color: var(--bg); font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 4px; transition: opacity .15s; }
+.btn-login-submit:hover { opacity: .85; }
+.login-free-note { text-align: center; font-size: 12px; color: var(--text3); margin-top: 14px; }
+.plan-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
+.plan-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: all .15s; }
+.plan-card:hover { border-color: var(--border2); }
+.plan-card.active { border-color: var(--accent); background: var(--accent-bg); }
+.plan-card-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+.plan-card-price { font-size: 18px; font-weight: 700; color: var(--accent); }
+.plan-card-price span { font-size: 12px; font-weight: 400; color: var(--text3); }
+.plan-card-features { font-size: 11px; color: var(--text2); margin-top: 6px; line-height: 1.6; }
+
+/* ── SAVED DOCS ── */
+#saved-panel { padding: 20px; display: none; }
+#saved-panel.visible { display: block; }
+.saved-doc {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px;
+  cursor: pointer; transition: all .12s; background: var(--surface);
+}
+.saved-doc:hover { border-color: var(--border2); box-shadow: var(--shadow); }
+.saved-doc-icon { font-size: 20px; }
+.saved-doc-info { flex: 1; }
+.saved-doc-name { font-size: 13px; font-weight: 600; }
+.saved-doc-meta { font-size: 11px; color: var(--text3); }
+.saved-doc-badge { font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+.badge-plan { background: var(--accent-bg); color: var(--accent); }
+.badge-ativ { background: var(--accent2-bg); color: var(--accent2); }
+
+/* ── SECTION TABS (sidebar) ── */
+.section-nav { display: flex; gap: 4px; margin-bottom: 14px; }
+.section-nav-btn { flex: 1; padding: 7px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: none; color: var(--text2); transition: all .12s; }
+.section-nav-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 600;
+  background: var(--text); color: var(--bg); padding: 12px 20px;
+  border-radius: 10px; font-size: 14px; font-weight: 500;
+  transform: translateY(80px); opacity: 0; transition: all .25s;
+  box-shadow: var(--shadow-lg);
+}
+#toast.show { transform: translateY(0); opacity: 1; }
+
+/* ── PRINT ── */
+@media print {
+  #topbar, #sidebar, #toolbar, .btn-export, .tool-group, .export-group { display: none !important; }
+  #app { height: auto; }
+  #content { overflow: visible; }
+  #editor-wrap { padding: 0; }
+  #doc-page { box-shadow: none; border-radius: 0; margin: 0; max-width: 100%; }
+  #loading-overlay { display: none !important; }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 720px) {
+  #sidebar { width: 100%; min-width: unset; position: absolute; z-index: 50; transform: translateX(-100%); transition: transform .25s; }
+  #sidebar.open { transform: translateX(0); }
+  .welcome-features { grid-template-columns: 1fr; }
+}
+
+/* ── HEADER TEMPLATE PICKER ── */
+.header-templates { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.ht-btn { border: 1px solid var(--border); border-radius: 8px; padding: 10px 8px; text-align: center; font-size: 11px; cursor: pointer; transition: all .12s; background: none; color: var(--text2); }
+.ht-btn:hover { border-color: var(--accent); color: var(--accent); }
+.ht-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div id="topbar">
+  <div class="logo-wrap" onclick="goHome()">
+    <span class="logo-text">Pedagox</span>
+    <span class="logo-tag">ferramentas pedagógicas</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTool('plano')">📋 Plano de Aula</button>
+    <button class="nav-tab" onclick="switchTool('atividade')">✏️ Atividade</button>
+    <button class="nav-tab" onclick="switchTool('salvos')">📁 Salvos</button>
+  </div>
+  <div class="topbar-right">
+    <button class="btn-login" onclick="openLogin()">Entrar</button>
+    <button class="btn-signup" onclick="openLogin()">Criar conta grátis</button>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div id="app">
+
+  <!-- ── SIDEBAR ── -->
+  <div id="sidebar">
+
+    <!-- PLANO DE AULA SIDEBAR -->
+    <div id="sidebar-plano">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Plano de Aula</div>
+
+        <div class="field">
+          <label>Componente curricular</label>
+          <select id="p-componente">
+            <option>Educação Física</option>
+            <option>Língua Portuguesa</option>
+            <option>Matemática</option>
+            <option>Ciências</option>
+            <option>História</option>
+            <option>Geografia</option>
+            <option>Arte</option>
+            <option>Inglês</option>
+            <option>Biologia</option>
+            <option>Física</option>
+            <option>Química</option>
+            <option>Filosofia</option>
+            <option>Sociologia</option>
+          </select>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Etapa</label>
+            <select id="p-etapa">
+              <option>Ensino Fundamental I</option>
+              <option>Ensino Fundamental II</option>
+              <option selected>Ensino Médio</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Turma / ano</label>
+            <select id="p-turma">
+              <option>1º ano</option><option>2º ano</option><option>3º ano</option>
+              <option>4º ano</option><option>5º ano</option><option>6º ano</option>
+              <option>7º ano</option><option selected>8º ano</option><option>9º ano</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Duração</label>
+            <select id="p-duracao">
+              <option>1 aula (50 min)</option>
+              <option selected>2 aulas (100 min)</option>
+              <option>3 aulas (150 min)</option>
+              <option>Semana (5 aulas)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Nº de alunos</label>
+            <input type="number" id="p-alunos" value="30" min="1" max="50">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Habilidade BNCC</label>
+          <input type="text" id="p-bncc" placeholder="Ex: EF89EF03 ou deixe em branco">
+        </div>
+
+        <div class="field">
+          <label>Objetivo / tema</label>
+          <textarea id="p-objetivo" placeholder="Ex: Vivenciar jogos cooperativos e refletir sobre valores coletivos..."></textarea>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Metodologia</div>
+        <div class="chips-wrap" id="p-metodologia">
+          <span class="chip active" onclick="toggleChip(this)">Expositiva</span>
+          <span class="chip active" onclick="toggleChip(this)">Prática</span>
+          <span class="chip" onclick="toggleChip(this)">Gamificação</span>
+          <span class="chip" onclick="toggleChip(this)">Projetos</span>
+          <span class="chip" onclick="toggleChip(this)">Debates</span>
+          <span class="chip" onclick="toggleChip(this)">Cooperativa</span>
+          <span class="chip" onclick="toggleChip(this)">TIC / Digital</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Recursos e avaliação</div>
+        <div class="chips-wrap" id="p-recursos">
+          <span class="chip active" onclick="toggleChip(this)">Quadro branco</span>
+          <span class="chip" onclick="toggleChip(this)">Datashow</span>
+          <span class="chip" onclick="toggleChip(this)">Tablet / celular</span>
+          <span class="chip active" onclick="toggleChip(this)">Materiais esportivos</span>
+          <span class="chip" onclick="toggleChip(this)">Vídeo</span>
+          <span class="chip" onclick="toggleChip(this)">Impresso</span>
+        </div>
+        <div style="margin-top:12px;">
+        <div class="chips-wrap" id="p-avaliacao">
+          <span class="chip active green" onclick="toggleChip(this)">Observação</span>
+          <span class="chip green" onclick="toggleChip(this)">Autoavaliação</span>
+          <span class="chip green" onclick="toggleChip(this)">Prova escrita</span>
+          <span class="chip green" onclick="toggleChip(this)">Trabalho</span>
+          <span class="chip green" onclick="toggleChip(this)">Portfólio</span>
+        </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <button class="btn-generate" id="btn-gerar-plano" onclick="gerarDocumento('plano')">
+          <div class="spinner"></div>
+          <span class="btn-label">✨ Gerar Plano de Aula</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ATIVIDADE SIDEBAR -->
+    <div id="sidebar-atividade" style="display:none;">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Atividade</div>
+
+        <div class="field">
+          <label>Tipo de atividade</label>
+          <select id="a-tipo">
+            <option>Exercícios de fixação</option>
+            <option>Avaliação / prova</option>
+            <option>Atividade de revisão</option>
+            <option>Caça-palavras</option>
+            <option>Cruzadinha</option>
+            <option>Estudo de caso</option>
+            <option>Pesquisa dirigida</option>
+            <option>Leitura e interpretação</option>
+            <option>Produção textual</option>
+            <option>Atividade física prática</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Componente curricular</label>
+          <select id="a-componente">
+            <option>Educação Física</option>
+            <option>Língua Portuguesa</option>
+            <option>Matemática</option>
+            <option>Ciências</option>
+            <option>História</option>
+            <option>Geografia</option>
+            <option>Arte</option>
+            <option>Inglês</option>
+            <option>Biologia</option>
+            <option>Física</option>
+            <option>Química</option>
+          </select>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Etapa</label>
+            <select id="a-etapa">
+              <option>Fund. I</option>
+              <option>Fund. II</option>
+              <option selected>Médio</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Turma</label>
+            <select id="a-turma">
+              <option>1º ano</option><option>2º ano</option><option>3º ano</option>
+              <option>4º ano</option><option>5º ano</option><option>6º ano</option>
+              <option>7º ano</option><option selected>8º ano</option><option>9º ano</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Conteúdo / tema</label>
+          <textarea id="a-conteudo" placeholder="Ex: Esportes coletivos, fundamentos do basquete, cooperação..."></textarea>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Nº de questões</label>
+            <select id="a-questoes">
+              <option>5 questões</option>
+              <option selected>10 questões</option>
+              <option>15 questões</option>
+              <option>20 questões</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Dificuldade</label>
+            <select id="a-dificuldade">
+              <option>Fácil</option>
+              <option selected>Médio</option>
+              <option>Difícil</option>
+              <option>Misto</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Tipos de questão</div>
+        <div class="chips-wrap" id="a-tipos-q">
+          <span class="chip active" onclick="toggleChip(this)">Múltipla escolha</span>
+          <span class="chip active" onclick="toggleChip(this)">Verdadeiro/Falso</span>
+          <span class="chip" onclick="toggleChip(this)">Dissertativa</span>
+          <span class="chip" onclick="toggleChip(this)">Completar lacunas</span>
+          <span class="chip" onclick="toggleChip(this)">Relacionar colunas</span>
+          <span class="chip" onclick="toggleChip(this)">Desenho / croqui</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Extras</div>
+        <div class="chips-wrap" id="a-extras">
+          <span class="chip" onclick="toggleChip(this)">Gabarito</span>
+          <span class="chip" onclick="toggleChip(this)">Imagens por IA</span>
+          <span class="chip" onclick="toggleChip(this)">Campo de nome/data</span>
+          <span class="chip active" onclick="toggleChip(this)">Pontuação</span>
+          <span class="chip" onclick="toggleChip(this)">NEE adaptada</span>
+          <span class="chip" onclick="toggleChip(this)">QR Code</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <button class="btn-generate" id="btn-gerar-ativ" onclick="gerarDocumento('atividade')">
+          <div class="spinner"></div>
+          <span class="btn-label">✨ Gerar Atividade</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- HEADER CONFIG (shared) -->
+    <div id="sidebar-header-config" style="display:none;">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Cabeçalho do documento</div>
+        <div class="header-templates">
+          <button class="ht-btn active" onclick="setHeaderTemplate('padrao',this)">Padrão<br>MG</button>
+          <button class="ht-btn" onclick="setHeaderTemplate('simples',this)">Simples</button>
+          <button class="ht-btn" onclick="setHeaderTemplate('completo',this)">Completo</button>
+          <button class="ht-btn" onclick="setHeaderTemplate('upload',this)">Upload<br>imagem</button>
+        </div>
+        <div style="margin-top:14px;">
+          <div class="field"><label>Nome da escola</label><input type="text" id="hc-escola" placeholder="EE Jesuzinha Araújo Magalhães" oninput="syncHeader()"></div>
+          <div class="field"><label>Município / UF</label><input type="text" id="hc-municipio" placeholder="Montes Claros — MG" oninput="syncHeader()"></div>
+          <div class="field"><label>CNPJ / Inep (opcional)</label><input type="text" id="hc-cnpj" placeholder="31.123.456/0001-00" oninput="syncHeader()"></div>
+        </div>
+        <div style="margin-top:8px; text-align:center;">
+          <button class="logo-upload-btn" onclick="document.getElementById('logo-file').click()">+ Adicionar logotipo da escola</button>
+          <input type="file" id="logo-file" accept="image/*" onchange="uploadLogo(event)">
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /sidebar -->
+
+  <!-- ── CONTENT ── -->
+  <div id="content">
+
+    <!-- WELCOME -->
+    <div id="welcome">
+      <div class="welcome-icon">📚</div>
+      <h1 class="welcome-title serif">Ferramentas Pedagógicas</h1>
+      <p class="welcome-sub">Gere planos de aula e atividades completas com IA. Personalize, edite e exporte em Word, PDF ou Google Docs — com o cabeçalho da sua escola.</p>
+      <div class="welcome-features">
+        <div class="feature-card" onclick="switchTool('plano');setTimeout(()=>document.getElementById('p-objetivo').focus(),300)">
+          <div class="feature-icon">📋</div>
+          <div class="feature-title">Plano de Aula</div>
+          <div class="feature-desc">Objetivos, metodologia, desenvolvimento e avaliação alinhados à BNCC.</div>
+        </div>
+        <div class="feature-card" onclick="switchTool('atividade');setTimeout(()=>document.getElementById('a-conteudo').focus(),300)">
+          <div class="feature-icon">✏️</div>
+          <div class="feature-title">Atividade / Prova</div>
+          <div class="feature-desc">Questões variadas com gabarito, imagens por IA e exportação formatada.</div>
+        </div>
+        <div class="feature-card" onclick="openHeaderConfig()">
+          <div class="feature-icon">🏫</div>
+          <div class="feature-title">Cabeçalho da escola</div>
+          <div class="feature-desc">Configure ou faça upload do timbre. Salvo para todos os documentos.</div>
+        </div>
+        <div class="feature-card" onclick="openLogin()">
+          <div class="feature-icon">💾</div>
+          <div class="feature-title">Salvar documentos</div>
+          <div class="feature-desc">Crie uma conta grátis para salvar, reutilizar e editar seus documentos.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div id="toolbar">
+      <div class="tool-group">
+        <button class="tb-btn" onclick="formatDoc('bold')"><b>N</b></button>
+        <button class="tb-btn" onclick="formatDoc('italic')"><i>I</i></button>
+        <button class="tb-btn" onclick="formatDoc('underline')"><u>S</u></button>
+      </div>
+      <div class="tool-sep"></div>
+      <div class="tool-group">
+        <button class="tb-btn icon" onclick="formatDoc('justifyLeft')" title="Alinhar esquerda">&#8676;</button>
+        <button class="tb-btn icon" onclick="formatDoc('justifyCenter')" title="Centralizar">&#8677;</button>
+        <button class="tb-btn icon" onclick="formatDoc('justifyFull')" title="Justificar">&#8680;</button>
+      </div>
+      <div class="tool-sep"></div>
+      <div class="tool-group">
+        <button class="tb-btn" onclick="addAnswerLines()" title="Linhas para resposta">__</button>
+        <button class="tb-btn" onclick="addAnswerBox()" title="Caixa de resposta">☐</button>
+        <button class="tb-btn" onclick="openImgGen()" title="Gerar imagem com IA">🖼</button>
+      </div>
+      <div class="tool-sep"></div>
+      <div class="tool-group">
+        <button class="tb-btn" onclick="showHeaderConfig()" title="Cabeçalho">🏫 Cabeçalho</button>
+      </div>
+      <div class="export-group">
+        <button class="btn-export" onclick="saveDoc()" title="Salvar">💾 Salvar</button>
+        <button class="btn-export" onclick="printDoc()" title="Imprimir / PDF">🖨 PDF</button>
+        <button class="btn-export blue" onclick="exportWord()" title="Exportar Word">📄 Word</button>
+        <button class="btn-export green" onclick="exportGDocs()" title="Abrir Google Docs">📗 Google Docs</button>
+      </div>
+    </div>
+
+    <!-- EDITOR -->
+    <div id="editor-wrap">
+      <div id="doc-page" style="position:relative;">
+        <div id="loading-overlay">
+          <div class="loading-dots">
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+          </div>
+          <div class="loading-text" id="loading-text">Gerando com IA…</div>
+        </div>
+
+        <!-- HEADER -->
+        <div id="doc-header">
+          <div id="header-placeholder" onclick="showHeaderConfig()">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg>
+            <span>Clique para configurar o cabeçalho da escola</span>
+          </div>
+          <div id="header-custom">
+            <div class="header-logo-wrap">
+              <img id="school-logo" src="" alt="Logo">
+              <button class="logo-upload-btn" id="logo-upload-btn-inline" onclick="document.getElementById('logo-file').click()" style="display:none;">+ Logo</button>
+            </div>
+            <div id="header-fields">
+              <div class="hf-school">
+                <input class="hf-input large" id="hf-escola" placeholder="Nome da Escola" oninput="syncHeaderReverse()">
+              </div>
+              <input class="hf-input" id="hf-rede" placeholder="Rede Estadual de Ensino" oninput="syncHeaderReverse()">
+              <input class="hf-input" id="hf-municipio" placeholder="Município — UF" oninput="syncHeaderReverse()">
+              <input class="hf-input" id="hf-cnpj" placeholder="CNPJ / Código Inep" oninput="syncHeaderReverse()">
+            </div>
+          </div>
+        </div>
+
+        <!-- BODY -->
+        <div id="doc-body">
+          <input id="doc-title-input" class="serif" value="Título do documento" spellcheck="true">
+          <div id="doc-subtitle">
+            <span>📚 <span id="meta-componente">—</span></span>
+            <span>🎓 <span id="meta-turma">—</span></span>
+            <span>⏱ <span id="meta-duracao">—</span></span>
+            <span>📅 <span id="meta-data">—</span></span>
+          </div>
+          <div id="doc-sections"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SALVOS PANEL -->
+    <div id="saved-panel">
+      <div style="padding:24px 24px 0; display:flex; align-items:center; justify-content:space-between;">
+        <h2 class="serif" style="font-size:22px;">Documentos salvos</h2>
+        <span style="font-size:13px; color:var(--text3);">Faça login para salvar seus documentos</span>
+      </div>
+      <div style="padding:16px 24px;" id="saved-list">
+        <div style="text-align:center; padding:60px 20px; color:var(--text3);">
+          <div style="font-size:36px; margin-bottom:12px;">📂</div>
+          <div style="font-size:15px; font-weight:500; margin-bottom:6px;">Nenhum documento salvo</div>
+          <div style="font-size:13px;">Crie uma conta grátis para salvar seus documentos, timbres e configurações de escola.</div>
+          <button class="btn-signup" style="margin-top:16px;" onclick="openLogin()">Criar conta grátis</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<!-- ── IMAGE GEN MODAL ── -->
+<div class="modal-bg" id="imggen-modal">
+  <div class="modal" style="width:500px; position:relative;">
+    <button class="modal-close" onclick="closeImgGen()">✕</button>
+    <h2 class="serif">Gerar imagem com IA</h2>
+    <p>Descreva a imagem que deseja inserir na atividade. A IA gerará no formato quadrado, mantendo a formatação do documento.</p>
+    <textarea class="imggen-prompt" id="imggen-prompt" placeholder="Ex: diagrama de quadra de basquete com posições marcadas, estilo ilustração educacional simples"></textarea>
+    <div style="margin:10px 0 6px; font-size:12px; font-weight:500; color:var(--text2);">Tamanho</div>
+    <div class="imggen-sizes">
+      <button class="size-btn active" onclick="selectSize(this,'small')">Pequeno<br><span style="opacity:.6">6×6 cm</span></button>
+      <button class="size-btn" onclick="selectSize(this,'medium')">Médio<br><span style="opacity:.6">10×10 cm</span></button>
+      <button class="size-btn" onclick="selectSize(this,'large')">Grande<br><span style="opacity:.6">14×14 cm</span></button>
+    </div>
+    <div style="margin:10px 0 6px; font-size:12px; font-weight:500; color:var(--text2);">Estilo</div>
+    <div class="chips-wrap" id="img-style-chips">
+      <span class="chip active" onclick="toggleChip(this)">Ilustração</span>
+      <span class="chip" onclick="toggleChip(this)">Diagrama</span>
+      <span class="chip" onclick="toggleChip(this)">Foto realista</span>
+      <span class="chip" onclick="toggleChip(this)">Linha simples</span>
+      <span class="chip" onclick="toggleChip(this)">Cartoon</span>
+    </div>
+    <div class="imggen-result" id="imggen-result">
+      <div id="imggen-loading-skeleton" style="display:none;aspect-ratio:1;width:100%;background:linear-gradient(90deg,#EFF4FF 25%,#DBEAFE 50%,#EFF4FF 75%);background-size:200% 100%;border-radius:8px;animation:shimmer 1.4s infinite;"></div>
+      <img id="imggen-preview" src="" alt="Imagem gerada" style="display:none;">
+      <div style="display:flex; gap:8px; margin-top:10px;" id="imggen-actions" style="display:none;">
+        <button class="btn-export blue" style="flex:1;" onclick="insertImageToDoc()">Inserir no documento</button>
+        <button class="btn-export" onclick="regenImage()">↺ Regerar</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:6px;" id="imggen-credit" style="display:none;">
+        Gerado por <strong>Pollinations AI</strong> — gratuito, sem chave API
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:16px;">
+      <button class="btn-generate" id="btn-gen-image" onclick="generateImage()" style="flex:1;">
+        <div class="spinner"></div>
+        <span class="btn-label">✨ Gerar imagem</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── LOGIN MODAL ── -->
+<div class="modal-bg" id="login-modal">
+  <div class="modal-inner" style="position:relative;">
+    <button style="position:absolute;top:14px;right:14px;background:none;border:none;cursor:pointer;font-size:18px;color:var(--text3);" onclick="closeLogin()">✕</button>
+    <div class="login-logo serif">Pedagox</div>
+    <div class="login-sub">Salve seus documentos, timbres e configurações</div>
+    <div class="login-tabs">
+      <button class="login-tab active" id="tab-login" onclick="switchLoginTab('login')">Entrar</button>
+      <button class="login-tab" id="tab-signup" onclick="switchLoginTab('signup')">Criar conta</button>
+    </div>
+    <div id="form-login">
+      <div class="login-field"><label>E-mail</label><input type="email" placeholder="seu@email.com"></div>
+      <div class="login-field"><label>Senha</label><input type="password" placeholder="••••••••"></div>
+      <button class="btn-login-submit" onclick="closeLogin();showToast('Bem-vindo ao Pedagox! 👋')">Entrar</button>
+      <div class="login-free-note">Ainda não tem conta? <span style="color:var(--accent);cursor:pointer;" onclick="switchLoginTab('signup')">Cadastre-se grátis</span></div>
+    </div>
+    <div id="form-signup" style="display:none;">
+      <div class="plan-cards">
+        <div class="plan-card active" id="plan-free" onclick="selectPlan('free')">
+          <div class="plan-card-name">Gratuito</div>
+          <div class="plan-card-price">R$ 0<span>/mês</span></div>
+          <div class="plan-card-features">5 gerações/mês<br>Exportar PDF<br>1 timbre salvo</div>
+        </div>
+        <div class="plan-card" id="plan-pro" onclick="selectPlan('pro')">
+          <div class="plan-card-name">Pro</div>
+          <div class="plan-card-price">R$ 24<span>/mês</span></div>
+          <div class="plan-card-features">Ilimitado<br>Word + Google Docs<br>Imagens por IA<br>Timbres ilimitados</div>
+        </div>
+      </div>
+      <div class="login-field"><label>Nome</label><input type="text" placeholder="Seu nome"></div>
+      <div class="login-field"><label>E-mail</label><input type="email" placeholder="seu@email.com"></div>
+      <div class="login-field"><label>Senha</label><input type="password" placeholder="Mínimo 8 caracteres"></div>
+      <button class="btn-login-submit" onclick="closeLogin();showToast('Conta criada! Bem-vindo ao Pedagox 🎉')">Criar conta</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div id="toast"></div>
+
+<script>
+// ── STATE ──
+let currentTool = 'plano';
+let currentDoc = null;
+let imggenSize = 'small';
+let imggenTarget = null;
+let headerConfigOpen = false;
+
+// ── NAV ──
+function goHome() {
+  document.getElementById('welcome').style.display = 'flex';
+  document.getElementById('editor-wrap').classList.remove('visible');
+  document.getElementById('toolbar').classList.remove('visible');
+  document.getElementById('saved-panel').classList.remove('visible');
+}
+
+function switchTool(tool) {
+  currentTool = tool;
+  document.querySelectorAll('.nav-tab').forEach((t,i) => t.classList.remove('active'));
+  const tabs = ['plano','atividade','salvos'];
+  document.querySelectorAll('.nav-tab')[tabs.indexOf(tool)].classList.add('active');
+
+  document.getElementById('sidebar-plano').style.display = tool === 'plano' ? 'block' : 'none';
+  document.getElementById('sidebar-atividade').style.display = tool === 'atividade' ? 'block' : 'none';
+  document.getElementById('sidebar-header-config').style.display = 'none';
+  headerConfigOpen = false;
+
+  if (tool === 'salvos') {
+    document.getElementById('welcome').style.display = 'none';
+    document.getElementById('editor-wrap').classList.remove('visible');
+    document.getElementById('toolbar').classList.remove('visible');
+    document.getElementById('saved-panel').classList.add('visible');
+  } else {
+    document.getElementById('saved-panel').classList.remove('visible');
+    if (currentDoc) {
+      document.getElementById('welcome').style.display = 'none';
+      document.getElementById('editor-wrap').classList.add('visible');
+      document.getElementById('toolbar').classList.add('visible');
+    }
+  }
+}
+
+function openHeaderConfig() { switchTool('plano'); showHeaderConfig(); }
+
+function showHeaderConfig() {
+  headerConfigOpen = !headerConfigOpen;
+  document.getElementById('sidebar-header-config').style.display = headerConfigOpen ? 'block' : 'none';
+  document.getElementById('sidebar-plano').style.display = (currentTool === 'plano' && !headerConfigOpen) ? 'block' : (currentTool === 'plano' && headerConfigOpen ? 'none' : 'none');
+  document.getElementById('sidebar-atividade').style.display = (currentTool === 'atividade' && !headerConfigOpen) ? 'block' : (currentTool === 'atividade' && headerConfigOpen ? 'none' : 'none');
+  if (!headerConfigOpen) {
+    document.getElementById('sidebar-plano').style.display = currentTool === 'plano' ? 'block' : 'none';
+    document.getElementById('sidebar-atividade').style.display = currentTool === 'atividade' ? 'block' : 'none';
+  }
+}
+
+// ── CHIPS ──
+function toggleChip(el) { el.classList.toggle('active'); }
+function getActiveChips(id) { return [...document.querySelectorAll(`#${id} .chip.active`)].map(c=>c.textContent.trim()).join(', '); }
+
+// ── HEADER ──
+function setHeaderTemplate(tpl, btn) {
+  document.querySelectorAll('.ht-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (tpl === 'upload') { document.getElementById('logo-file').click(); return; }
+  const defaults = {
+    padrao: { escola: 'EE Jesuzinha Araújo Magalhães', rede: 'Rede Estadual de Ensino de Minas Gerais', municipio: 'Montes Claros — MG', cnpj: '' },
+    simples: { escola: 'Nome da Escola', rede: '', municipio: '', cnpj: '' },
+    completo: { escola: 'Nome da Escola', rede: 'Rede Estadual de Ensino', municipio: 'Município — UF', cnpj: 'CNPJ: 00.000.000/0001-00' }
+  };
+  const d = defaults[tpl];
+  document.getElementById('hc-escola').value = d.escola;
+  document.getElementById('hc-municipio').value = d.municipio;
+  document.getElementById('hc-cnpj').value = d.cnpj;
+  syncHeader();
+}
+
+function syncHeader() {
+  const escola = document.getElementById('hc-escola').value;
+  const municipio = document.getElementById('hc-municipio').value;
+  const cnpj = document.getElementById('hc-cnpj').value;
+  document.getElementById('hf-escola').value = escola;
+  document.getElementById('hf-municipio').value = municipio;
+  document.getElementById('hf-cnpj').value = cnpj;
+  document.getElementById('hf-rede').value = 'Rede Estadual de Ensino de Minas Gerais';
+  showHeaderInDoc();
+}
+
+function syncHeaderReverse() {
+  document.getElementById('hc-escola').value = document.getElementById('hf-escola').value;
+  document.getElementById('hc-municipio').value = document.getElementById('hf-municipio').value;
+  document.getElementById('hc-cnpj').value = document.getElementById('hf-cnpj').value;
+}
+
+function showHeaderInDoc() {
+  document.getElementById('header-placeholder').style.display = 'none';
+  document.getElementById('header-custom').classList.add('visible');
+  document.getElementById('logo-upload-btn-inline').style.display = 'block';
+}
+
+function uploadLogo(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('school-logo');
+    img.src = e.target.result;
+    img.style.display = 'block';
+    showHeaderInDoc();
+    showToast('Logo da escola adicionado!');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── GENERATE ──
+async function gerarDocumento(tipo) {
+  const btn = document.getElementById(`btn-gerar-${tipo === 'plano' ? 'plano' : 'ativ'}`);
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  document.getElementById('welcome').style.display = 'none';
+  document.getElementById('editor-wrap').classList.add('visible');
+  document.getElementById('toolbar').classList.add('visible');
+  document.getElementById('saved-panel').classList.remove('visible');
+  document.getElementById('loading-overlay').classList.add('visible');
+
+  const loadingMsgs = ['Gerando com IA…', 'Alinhando à BNCC…', 'Estruturando o documento…', 'Quase pronto…'];
+  let mi = 0;
+  const lt = setInterval(() => { document.getElementById('loading-text').textContent = loadingMsgs[mi++ % loadingMsgs.length]; }, 1800);
+
+  let prompt, meta;
+  const hoje = new Date().toLocaleDateString('pt-BR');
+
+  if (tipo === 'plano') {
+    const comp = document.getElementById('p-componente').value;
+    const etapa = document.getElementById('p-etapa').value;
+    const turma = document.getElementById('p-turma').value;
+    const duracao = document.getElementById('p-duracao').value;
+    const alunos = document.getElementById('p-alunos').value;
+    const bncc = document.getElementById('p-bncc').value;
+    const objetivo = document.getElementById('p-objetivo').value;
+    const metodologia = getActiveChips('p-metodologia');
+    const recursos = getActiveChips('p-recursos');
+    const avaliacao = getActiveChips('p-avaliacao');
+    meta = { comp, turma, duracao, hoje };
+    prompt = `Crie um plano de aula completo e detalhado em português brasileiro para:
+- Componente curricular: ${comp}
+- Etapa: ${etapa} | Turma: ${turma}
+- Duração: ${duracao} | Número de alunos: ${alunos}
+- Habilidade BNCC: ${bncc || 'selecionar habilidade pertinente ao conteúdo'}
+- Objetivo/tema: ${objetivo || 'conteúdo pertinente ao componente e turma'}
+- Metodologia: ${metodologia}
+- Recursos: ${recursos}
+- Avaliação: ${avaliacao}
+
+Retorne um JSON com esta estrutura exata (sem markdown, só JSON puro):
+{
+  "titulo": "título criativo e pedagógico",
+  "secoes": [
+    {"titulo": "Identificação", "conteudo": "texto formatado com todos dados identificadores"},
+    {"titulo": "Objetivos de Aprendizagem", "conteudo": "lista de objetivos bem elaborados"},
+    {"titulo": "Habilidades BNCC", "conteudo": "código(s) e descrição das habilidades"},
+    {"titulo": "Conteúdos", "conteudo": "conteúdos conceituais, procedimentais e atitudinais"},
+    {"titulo": "Metodologia e Estratégias", "conteudo": "descrição detalhada das estratégias"},
+    {"titulo": "Desenvolvimento — Momento 1: Aquecimento/Início", "conteudo": "descrição detalhada com tempo estimado"},
+    {"titulo": "Desenvolvimento — Momento 2: Desenvolvimento Principal", "conteudo": "descrição detalhada com tempo estimado"},
+    {"titulo": "Desenvolvimento — Momento 3: Fechamento e Avaliação", "conteudo": "descrição detalhada com tempo estimado"},
+    {"titulo": "Recursos Didáticos", "conteudo": "lista de recursos necessários"},
+    {"titulo": "Avaliação", "conteudo": "critérios, instrumentos e formas de avaliação"},
+    {"titulo": "Referências", "conteudo": "referências bibliográficas no padrão ABNT"}
+  ]
+}`;
+  } else {
+    const tipo_a = document.getElementById('a-tipo').value;
+    const comp = document.getElementById('a-componente').value;
+    const etapa = document.getElementById('a-etapa').value;
+    const turma = document.getElementById('a-turma').value;
+    const conteudo = document.getElementById('a-conteudo').value;
+    const nq = document.getElementById('a-questoes').value;
+    const dif = document.getElementById('a-dificuldade').value;
+    const tiposQ = getActiveChips('a-tipos-q');
+    const extras = getActiveChips('a-extras');
+    meta = { comp, turma, duracao: tipo_a, hoje };
+    prompt = `Crie uma ${tipo_a} completa em português brasileiro para:
+- Componente: ${comp} | Etapa: ${etapa} | Turma: ${turma}
+- Conteúdo/tema: ${conteudo || 'conteúdo pertinente ao componente'}
+- Quantidade: ${nq} | Dificuldade: ${dif}
+- Tipos de questão: ${tiposQ}
+- Extras: ${extras}
+
+Retorne um JSON com esta estrutura exata (sem markdown, só JSON puro):
+{
+  "titulo": "título da atividade",
+  "secoes": [
+    {"titulo": "Instruções", "conteudo": "instruções gerais para o aluno"},
+    {"titulo": "Questões", "conteudo": "todas as questões numeradas e bem elaboradas, com alternativas quando for múltipla escolha, com espaço indicado (___) para completar lacunas etc. Seja detalhado, crie questões de qualidade pedagógica alta. Inclua gabarito ao final se solicitado."}
+  ]
+}`;
+  }
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: 'Você é um especialista em educação brasileira. Responda APENAS com JSON válido, sem markdown, sem texto antes ou depois.',
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await resp.json();
+    const raw = data.content?.[0]?.text || '{}';
+    const clean = raw.replace(/```json|```/g,'').trim();
+    const doc = JSON.parse(clean);
+    renderDoc(doc, meta, tipo);
+    currentDoc = { doc, meta, tipo };
+    showToast('Documento gerado com sucesso! ✨');
+  } catch(e) {
+    renderDocDemo(tipo, meta);
+    showToast('Prévia carregada — configure a chave API para gerar com IA');
+  }
+
+  clearInterval(lt);
+  document.getElementById('loading-overlay').classList.remove('visible');
+  btn.classList.remove('loading');
+  btn.disabled = false;
+}
+
+// ── RENDER ──
+function renderDoc(doc, meta, tipo) {
+  document.getElementById('doc-title-input').value = doc.titulo || 'Documento pedagógico';
+  document.getElementById('meta-componente').textContent = meta.comp;
+  document.getElementById('meta-turma').textContent = meta.turma;
+  document.getElementById('meta-duracao').textContent = meta.duracao;
+  document.getElementById('meta-data').textContent = meta.hoje;
+
+  const sections = document.getElementById('doc-sections');
+  sections.innerHTML = '';
+
+  // Campo nome/data do aluno se for atividade
+  if (tipo === 'atividade') {
+    sections.innerHTML += `<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:20px;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);">
+      <div><div style="font-size:11px;color:var(--text3);margin-bottom:4px;">Nome do aluno</div><div style="border-bottom:1px solid var(--border);height:24px;"></div></div>
+      <div><div style="font-size:11px;color:var(--text3);margin-bottom:4px;">Turma</div><div style="border-bottom:1px solid var(--border);height:24px;"></div></div>
+      <div><div style="font-size:11px;color:var(--text3);margin-bottom:4px;">Data</div><div style="border-bottom:1px solid var(--border);height:24px;"></div></div>
+    </div>`;
+  }
+
+  (doc.secoes || []).forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'doc-section';
+    const content = (s.conteudo || '').replace(/\n/g,'<br>');
+    div.innerHTML = `<div class="doc-section-title">${s.titulo}</div><div class="doc-content" contenteditable="true">${content}</div>`;
+    sections.appendChild(div);
+  });
+}
+
+function renderDocDemo(tipo, meta) {
+  const demoPlano = {
+    titulo: 'Jogos cooperativos e práticas corporais coletivas',
+    secoes: [
+      { titulo: 'Identificação', conteudo: `Componente: ${meta.comp} | Turma: ${meta.turma} | Data: ${meta.hoje}` },
+      { titulo: 'Objetivos de Aprendizagem', conteudo: '• Vivenciar práticas corporais coletivas que promovam a cooperação;\n• Identificar valores sociais presentes nos jogos;\n• Desenvolver comunicação e resolução de conflitos em grupo.' },
+      { titulo: 'Habilidades BNCC', conteudo: 'EF89EF03 — Experimentar e fruir, na escola e fora dela, práticas corporais de aventura na natureza e urbanas, valorizando a própria segurança e integridade física.' },
+      { titulo: 'Desenvolvimento — Momento 1: Aquecimento (15 min)', conteudo: 'Roda de conversa inicial: o professor questiona os alunos sobre o que é cooperação e cita exemplos do cotidiano. Atividade de aquecimento: "Nó humano" — grupo forma um círculo, pegam as mãos de pessoas não adjacentes e devem se desembaraçar sem soltar as mãos.' },
+      { titulo: 'Desenvolvimento — Momento 2: Principal (25 min)', conteudo: 'Atividade: Corrida cooperativa com obstáculos. Divisão em grupos de 5. Cada grupo deve completar um circuito de obstáculos em conjunto, onde cada integrante tem uma função específica. Discussão coletiva após cada rodada.' },
+      { titulo: 'Avaliação', conteudo: 'Observação participante durante as atividades, registrando engajamento, cooperação e comunicação. Autoavaliação oral no fechamento da aula.' }
+    ]
+  };
+  const demoAtiv = {
+    titulo: `Atividade de ${meta.comp} — ${meta.turma}`,
+    secoes: [
+      { titulo: 'Instruções', conteudo: 'Leia atentamente cada questão antes de responder. As questões valem 1 ponto cada. Boa prova!' },
+      { titulo: 'Questões', conteudo: '1. (Múltipla escolha) Qual dos itens abaixo melhor define a palavra "cooperação"?\na) Competição entre grupos\nb) Trabalho conjunto para atingir um objetivo comum ✓\nc) Atividade realizada individualmente\nd) Liderança de um único integrante\n\n2. (V/F) A comunicação entre membros de um grupo é essencial para o sucesso coletivo. ( V )\n\n3. (Dissertativa) Cite dois valores importantes observados em jogos cooperativos e explique por quê eles são importantes na vida em sociedade.\n\n_______________________________________\n_______________________________________\n_______________________________________\n\n4. (Complete) O jogo cooperativo diferencia-se do competitivo porque seu objetivo é __________________ ao invés de __________________ os demais participantes.' }
+    ]
+  };
+  renderDoc(tipo === 'plano' ? demoPlano : demoAtiv, meta, tipo);
+}
+
+// ── EDITOR ACTIONS ──
+function formatDoc(cmd) { document.execCommand(cmd, false, null); }
+
+function addAnswerLines() {
+  const sel = window.getSelection();
+  if (sel.rangeCount) {
+    const el = document.createElement('div');
+    el.className = 'answer-lines';
+    for(let i=0;i<4;i++) el.innerHTML += '<div class="answer-line"></div>';
+    sel.getRangeAt(0).insertNode(el);
+  } else showToast('Clique no documento para posicionar as linhas');
+}
+
+function addAnswerBox() {
+  const sel = window.getSelection();
+  if (sel.rangeCount) {
+    const el = document.createElement('div');
+    el.className = 'answer-box square';
+    el.style.width = '120px'; el.style.height = '120px';
+    sel.getRangeAt(0).insertNode(el);
+  } else showToast('Clique no documento para posicionar a caixa');
+}
+
+// ── IMAGE GEN ──
+function openImgGen() {
+  imggenTarget = window.getSelection().getRangeAt ? window.getSelection().getRangeAt(0).cloneRange() : null;
+  document.getElementById('imggen-modal').classList.add('open');
+}
+function closeImgGen() { document.getElementById('imggen-modal').classList.remove('open'); }
+function selectSize(btn, size) {
+  document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); imggenSize = size;
+}
+
+async function generateImage() {
+  const promptRaw = document.getElementById('imggen-prompt').value.trim();
+  if (!promptRaw) { showToast('Digite uma descrição para a imagem'); return; }
+  const btn = document.getElementById('btn-gen-image');
+  btn.classList.add('loading'); btn.disabled = true;
+
+  // Tamanho em pixels para Pollinations (quadrado)
+  const sizeMap = { small: 512, medium: 768, large: 1024 };
+  const px = sizeMap[imggenSize];
+
+  // Estilo selecionado
+  const estiloEl = document.querySelector('#img-style-chips .chip.active');
+  const estilo = estiloEl ? estiloEl.textContent.trim() : 'Ilustração';
+  const estiloMap = {
+    'Ilustração':    'flat illustration, educational, clean, colorful, vector style',
+    'Diagrama':      'educational diagram, labeled, clean lines, white background, technical',
+    'Foto realista': 'photorealistic, high quality, educational photo',
+    'Linha simples': 'simple line drawing, black and white, educational sketch, minimal',
+    'Cartoon':       'cartoon style, friendly, colorful, educational, for children'
+  };
+  const estiloEn = estiloMap[estilo] || 'educational illustration';
+
+  // Traduz prompt + adiciona contexto educacional (Pollinations é melhor em inglês)
+  const promptEn = `Educational material illustration: ${promptRaw}. Style: ${estiloEn}. Square format, no text overlays, clean background, suitable for school documents, high quality.`;
+
+  // Monta URL da Pollinations.AI (gratuito, sem chave)
+  const seed = Math.floor(Math.random() * 99999);
+  const encodedPrompt = encodeURIComponent(promptEn);
+  const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${px}&height=${px}&seed=${seed}&nologo=true&enhance=true`;
+
+  // Mostra skeleton enquanto carrega
+  const result = document.getElementById('imggen-result');
+  const preview = document.getElementById('imggen-preview');
+  const skeleton = document.getElementById('imggen-loading-skeleton');
+  const actions = document.getElementById('imggen-actions');
+  const credit = document.getElementById('imggen-credit');
+  result.classList.add('visible');
+  skeleton.style.display = 'block';
+  preview.style.display = 'none';
+  actions.style.display = 'none';
+  credit.style.display = 'none';
+
+  // Cria nova imagem para detectar load/error sem piscar o preview
+  const img = new Image();
+  img.onload = () => {
+    skeleton.style.display = 'none';
+    preview.src = url;
+    preview.style.display = 'block';
+    actions.style.display = 'flex';
+    credit.style.display = 'block';
+    btn.classList.remove('loading'); btn.disabled = false;
+    showToast('Imagem gerada com Pollinations AI! ✨');
+  };
+  img.onerror = () => {
+    skeleton.style.display = 'none';
+    result.classList.remove('visible');
+    btn.classList.remove('loading'); btn.disabled = false;
+    showToast('Erro ao gerar imagem. Tente novamente.');
+  };
+  img.src = url;
+
+  // Salva URL para inserção no documento
+  window._lastImgUrl = url;
+}
+
+function regenImage() { generateImage(); }
+
+function insertImageToDoc() {
+  const src = window._lastImgUrl || document.getElementById('imggen-preview').src;
+  if (!src) { showToast('Gere uma imagem primeiro'); return; }
+  const sizeMap = { small: '180px', medium: '280px', large: '400px' };
+  const sz = sizeMap[imggenSize];
+  const caption = document.getElementById('imggen-prompt').value.trim().slice(0,60);
+  const imgHtml = `<div style="display:inline-block;margin:16px auto;text-align:center;"><img src="${src}" style="width:${sz};height:${sz};object-fit:cover;border-radius:8px;border:1px solid #E2DDD5;display:block;" crossorigin="anonymous"><div style="font-size:11px;color:#9A958F;margin-top:5px;font-style:italic;">Figura: ${caption}</div></div><br>`;
+  // Insere no último bloco editável do documento
+  const sections = document.querySelectorAll('.doc-content');
+  if (sections.length > 0) {
+    sections[sections.length-1].innerHTML += imgHtml;
+  }
+  closeImgGen();
+  showToast('Imagem inserida no documento! 🖼');
+}
+
+// ── EXPORT ──
+function saveDoc() { openLogin(); showToast('Faça login para salvar seus documentos'); }
+
+function printDoc() {
+  window.print();
+  showToast('Use "Salvar como PDF" na janela de impressão');
+}
+
+function exportWord() {
+  const title = document.getElementById('doc-title-input').value;
+  const escola = document.getElementById('hf-escola').value || '';
+  const municipio = document.getElementById('hf-municipio').value || '';
+  const sections = [...document.querySelectorAll('.doc-section')].map(s => {
+    const t = s.querySelector('.doc-section-title')?.textContent || '';
+    const c = s.querySelector('.doc-content')?.innerText || '';
+    return `<h2>${t}</h2><p>${c.replace(/\n/g,'</p><p>')}</p>`;
+  }).join('');
+
+  const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'><title>${title}</title>
+<style>
+  body{font-family:Arial,sans-serif;font-size:12pt;margin:2.5cm;}
+  h1{font-size:16pt;text-align:center;margin-bottom:6pt;}
+  h2{font-size:12pt;color:#1D4ED8;border-bottom:1px solid #DBEAFE;padding-bottom:4pt;margin-top:14pt;}
+  p{line-height:1.6;margin-bottom:6pt;}
+  .header{text-align:center;border-bottom:2pt solid #000;padding-bottom:10pt;margin-bottom:16pt;}
+  .header h3{font-size:14pt;margin:0;}
+  .header p{font-size:10pt;color:#555;margin:2pt 0;}
+</style>
+</head><body>
+<div class="header">
+  ${escola ? `<h3>${escola}</h3>` : ''}
+  ${municipio ? `<p>${municipio}</p>` : ''}
+</div>
+<h1>${title}</h1>
+${sections}
+</body></html>`;
+
+  const blob = new Blob(['\ufeff', html], {type:'application/msword'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${title.replace(/\s+/g,'-')}.doc`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast('Documento Word exportado! 📄');
+}
+
+function exportGDocs() {
+  const title = document.getElementById('doc-title-input').value;
+  const escola = document.getElementById('hf-escola').value || 'Escola';
+  const content = [...document.querySelectorAll('.doc-section')].map(s => {
+    const t = s.querySelector('.doc-section-title')?.textContent || '';
+    const c = s.querySelector('.doc-content')?.innerText || '';
+    return `${t.toUpperCase()}\n${c}`;
+  }).join('\n\n');
+  const full = `${escola}\n\n${title}\n${'─'.repeat(60)}\n\n${content}`;
+  const encoded = encodeURIComponent(full);
+  window.open(`https://docs.google.com/document/create?title=${encodeURIComponent(title)}&body=${encoded}`, '_blank');
+  showToast('Abrindo Google Docs... 📗');
+}
+
+// ── LOGIN ──
+function openLogin() { document.getElementById('login-modal').classList.add('open'); }
+function closeLogin() { document.getElementById('login-modal').classList.remove('open'); }
+function switchLoginTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-signup').classList.toggle('active', tab==='signup');
+  document.getElementById('form-login').style.display = tab==='login'?'block':'none';
+  document.getElementById('form-signup').style.display = tab==='signup'?'block':'none';
+}
+function selectPlan(p) {
+  document.getElementById('plan-free').classList.toggle('active', p==='free');
+  document.getElementById('plan-pro').classList.toggle('active', p==='pro');
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('meta-data').textContent = new Date().toLocaleDateString('pt-BR');
+  document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if(e.target === m) m.classList.remove('open'); }));
+});
+</script>
+</body>
+</html>
