@@ -1108,47 +1108,43 @@ Retorne um JSON com esta estrutura exata (sem markdown, só JSON puro):
   }
 
   try {
-    // Pollinations AI — API compatível com OpenAI
-    const reqBody = JSON.stringify({
-      model: 'openai-large',
-      messages: [
-        { role: 'system', content: 'Você é um especialista em educação brasileira. Responda APENAS com JSON válido, sem markdown, sem texto antes ou depois. Não inclua nenhum texto fora do JSON.' },
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.7,
-      private: true
-    });
+    // Pollinations Text API — endpoint GET (sem CORS, funciona em arquivo local)
+    const systemPrompt = 'Você é um especialista em educação brasileira. Responda APENAS com JSON válido, sem markdown, sem texto antes ou depois. Não inclua nenhum texto fora do JSON.';
+    const seed = Math.floor(Math.random() * 9999);
+    const url = 'https://text.pollinations.ai/' + encodeURIComponent(prompt)
+      + '?model=openai-large'
+      + '&seed=' + seed
+      + '&json=true'
+      + '&private=true'
+      + '&system=' + encodeURIComponent(systemPrompt)
+      + '&token=' + POLLINATIONS_KEY;
 
-    const resp = await fetch('https://text.pollinations.ai/openai', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + POLLINATIONS_KEY
-      },
-      body: reqBody
-    });
+    const resp = await fetch(url);
 
     if (!resp.ok) {
       const errText = await resp.text();
-      throw new Error('HTTP ' + resp.status + ': ' + errText);
+      throw new Error('HTTP ' + resp.status + ': ' + errText.slice(0,120));
     }
 
-    const data = await resp.json();
-    const raw = data.choices?.[0]?.message?.content || '';
-    if (!raw) throw new Error('Resposta vazia da API');
+    const raw = await resp.text();
+    if (!raw || raw.trim() === '') throw new Error('Resposta vazia da API');
 
     // Limpa markdown se vier com backticks
-    const clean = raw.replace(/^```json\s*/,'').replace(/```\s*$/,'').trim();
-    const doc = JSON.parse(clean);
+    const clean = raw.replace(/^```jsons*/,'').replace(/```s*$/,'').trim();
 
-    if (!doc.titulo || !doc.secoes) throw new Error('JSON inválido: ' + clean.slice(0,100));
+    // Extrai JSON mesmo se vier com texto em volta
+    const jsonMatch = clean.match(/{[sS]*}/);
+    if (!jsonMatch) throw new Error('JSON não encontrado na resposta');
+
+    const doc = JSON.parse(jsonMatch[0]);
+    if (!doc.titulo || !doc.secoes) throw new Error('Estrutura inválida: ' + clean.slice(0,80));
 
     renderDoc(doc, meta, tipo);
     currentDoc = { doc, meta, tipo };
     showToast('Documento gerado com sucesso! ✨');
   } catch(e) {
-    console.error('Erro Pollinations Text:', e.message);
-    showToast('Erro: ' + e.message.slice(0,80));
+    console.error('Erro Pollinations:', e.message);
+    showToast('Erro ao gerar: ' + e.message.slice(0,80));
     renderDocDemo(tipo, meta);
   }
 
